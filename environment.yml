@@ -1,6 +1,8 @@
-name: Forseti
+name: forseti
 channels:
   - defaults
 dependencies:
+  - conda-build
+  - anaconda-client
   - python=3.10
   - pytest
