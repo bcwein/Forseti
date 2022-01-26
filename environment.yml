@@ -2,11 +2,5 @@ name: Forseti
 channels:
   - defaults
 dependencies:
-  - numpy
-  - pandas
-  - matplotlib
-  - scikit-learn
-  - scipy
-  - statsmodels
-  - jupyter
+  - python=3.10
   - pytest
