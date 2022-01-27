@@ -6,3 +6,4 @@ dependencies:
   - anaconda-client
   - python=3.9
   - pytest
+  - flake8
