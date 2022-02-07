@@ -1,6 +1,7 @@
 name: forseti
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - conda-build
   - anaconda-client
@@ -8,3 +9,5 @@ dependencies:
   - pytest
   - flake8
   - black
+  - jupyter
+  - ipykernel
