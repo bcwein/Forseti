@@ -5,9 +5,11 @@ channels:
 dependencies:
   - conda-build
   - anaconda-client
-  - python=3.9
+  - python
   - pytest
   - flake8
   - black
   - jupyter
   - ipykernel
+  - pandas
+  - pymc3
