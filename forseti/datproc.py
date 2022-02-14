@@ -17,3 +17,19 @@ def translate_categorical(dataframe):
         dataframe[cat] = dataframe[cat].cat.codes
 
     return dataframe, codes
+
+
+def extract_sensitive(df, attributes):
+    """Takes a pandas dataframe and extract sensitive attributes from list of
+    attributes.
+
+    Args:
+        dataframe (pandas dataframe): Dataframe to translate
+        attributes: sensitive attributes
+    Return:
+        sensitive: Dataframe of sensitive labels
+        features: Non-sensitive features
+    """
+    sensitive = df[attributes]
+    features = df.drop(attributes, axis=1)
+    return sensitive, features
