@@ -11,3 +11,4 @@ dependencies:
   - ipykernel
   - pandas
   - pymc3
+  - seaborn
