@@ -2,6 +2,7 @@ name: forseti
 channels:
   - defaults
   - conda-forge
+  - ankurankan
 dependencies:
   - python
   - pytest
@@ -10,5 +11,6 @@ dependencies:
   - jupyter
   - ipykernel
   - pandas
-  - pymc3
+  - pgmpy
   - seaborn
+  - scikit-learn

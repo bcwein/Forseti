@@ -11,7 +11,19 @@ def translate_categorical(dataframe):
         dataframe (pandas dataframe): Dataframe to translate
     """
     codes = {}
-    categorical = dataframe.select_dtypes(["object"]).columns
+
+    # Translate object to categorical
+    obje = dataframe.select_dtypes(["object"]).columns
+    for obj in obje:
+        dataframe[obj] = dataframe[obj].astype('category')
+
+    # Translate numeric to categorical
+    numerical = dataframe.select_dtypes('int').columns
+    for num in numerical:
+        dataframe[num] = pd.qcut(dataframe[num], 5, duplicates='drop')
+
+    # Enumerate categorical
+    categorical = dataframe.select_dtypes(["category"]).columns
 
     for cat in categorical:
         dataframe[cat] = dataframe[cat].astype("category")
