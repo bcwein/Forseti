@@ -102,3 +102,11 @@ class latentLabelClassifier:
             file (filetype): _description_
         """
         pickle.dump(self.model, open(file, 'wb'))
+
+    def check_model(self):
+        """Check if model is a valid model.
+
+        Returns:
+            _type_: boolean
+        """
+        return self.model.check_model()
