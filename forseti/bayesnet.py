@@ -93,7 +93,7 @@ class latentLabelClassifier:
         Args:
             file (string): file path of trained model.
         """
-        self.model = pickle.load(open(file, 'rb'))
+        self.model = pickle.load(open(file, "rb"))
 
     def save(self, file):
         """Save trained model to file using pickle.
@@ -101,7 +101,7 @@ class latentLabelClassifier:
         Args:
             file (filetype): _description_
         """
-        pickle.dump(self.model, open(file, 'wb'))
+        pickle.dump(self.model, open(file, "wb"))
 
     def check_model(self):
         """Check if model is a valid model.
