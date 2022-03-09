@@ -1,10 +1,16 @@
 name: forseti
 channels:
   - defaults
+  - conda-forge
+  - ankurankan
 dependencies:
-  - conda-build
-  - anaconda-client
-  - python=3.9
+  - python
   - pytest
   - flake8
   - black
+  - jupyter
+  - ipykernel
+  - pandas
+  - pgmpy
+  - seaborn
+  - scikit-learn
