@@ -1,4 +1,3 @@
-from forseti.datproc import translate_categorical, extract_sensitive
 from forseti.bayesnet import latentLabelClassifier
 import pandas as pd
 

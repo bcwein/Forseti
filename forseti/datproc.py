@@ -4,7 +4,7 @@ import pandas as pd
 
 
 def translate_categorical(dataframe):
-    """Takes a pandas dataframe and translate all categorical attributes to 
+    """Takes a pandas dataframe and translate all categorical attributes to
     numerical values and returns encoded dataframe.
 
     Args:
