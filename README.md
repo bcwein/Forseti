@@ -6,8 +6,10 @@ This python package implements machine learning methods and functionality for ev
 # Modules
 
 ## bayesnet
-
 Module for running bayesian networks 
+
+<details>
+<summary>Click here for documentation</summary>
 ### class **latentLabelClassifier**
 
 Bayesian network which constructs a bayesian network that models the discrimination process. It assumes that the labels in the training dataset is biased and is genereted from a probability distribution
@@ -85,11 +87,14 @@ pickle.dump(self.model, open(file, "wb"))
 >check_model()
 
 **Description:** Checks if model is valid. Returns true or false.
-
+</details>
 
 ## datproc
 
 Module for data preprocessing.
+
+<details>
+<summary>Click here for documentation</summary>
 
 >translate_categorical()
 
@@ -116,3 +121,64 @@ from list of attributes.
 dummy = pd.get_dummies(df, prefix_sep=".", drop_first=True)
 return dummy
 ```
+</details>
+
+## fairness
+Module for fairness evaluation
+<details>
+<summary>Click here for documentation</summary>
+
+>parity_score()
+
+**Description:**
+Demographic parity is defined as
+
+$$
+P(\hat{Y} | S = 0) = P(\hat{Y} | S = 1)
+$$
+
+Where $\hat{Y}$ is the predictor and $S$ is the sensitive attribute.
+
+This can be generalised to a multiclass case with $K$ classes.
+
+$$
+P(\hat{Y} | S_i) = P(\hat{Y} | S_j) \qquad i, j \in \{0, \dots, K-1\}
+$$
+
+We want to condense this to a single metric between $0$ and $1$. I.e, when we 
+have likelihood for the different classes of a sensitive attribute in a list of 
+probabilities $L$ like so
+
+$$
+L =\{ P(\hat{Y} | S=0), \dots, P(\hat{Y} | S=K-1) \}
+$$
+
+and for that, we have worked out the following funsction $f$
+
+$$
+    f = \frac{\text{geometric mean}(L)}{\text{mean}(L)}
+$$
+
+**Parameters:**
+  - probabilities (list): list of sensitive conditional probabilities.
+
+```
+def parity_score(probabilities):
+    a = np.array(probabilities)
+    return a.prod() ** (1.0 / len(a)) / a.mean()
+```
+
+>fairness_report()
+**Description:**
+
+Fairness report.
+
+Calculates some fairness and performance metrics from test labels and predictions. Returns a dataframe of results.
+
+**Parameters:**
+  - y (array): Dataset Labels.
+  - y_pred (array): Model predictions.
+  - sensitives (dataframe): Test dataset of sensitive attributes.
+  - model_name (string): Name of model.
+
+</details>
