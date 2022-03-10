@@ -1,4 +1,4 @@
-from forseti.fairness import parity_score, fairness_report
+from forseti.fairness import parity_score
 
 
 def test_parity_score():

@@ -50,7 +50,9 @@ def fairness_report(y, y_pred, sensitives, model_name):
         for val in sorted(sensitives[sens].unique()):
             try:
                 likelihoods.append(
-                    y_pred[sensitives[sens] == val].value_counts(normalize=True)[1]
+                    y_pred[sensitives[sens] == val].value_counts(
+                        normalize=True
+                    )[1]
                 )
             except KeyError:
                 likelihoods.append(0)
