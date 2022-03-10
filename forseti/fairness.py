@@ -37,6 +37,17 @@ def parity_score(probabilities):
 
 
 def fairness_report(y, y_pred, sensitives, model_name):
+    """Fairness report
+
+    Args:
+        y (array): Dataset Labels.
+        y_pred (array): Model predictions.
+        sensitives (dataframe): Test dataset of sensitive attributes.
+        model_name (string): Name of model.
+
+    Returns:
+        Pandas dataframe: A row with all metrics and their values.
+    """
     tn, fp, _, _ = confusion_matrix(y, y_pred).ravel()
     report = {
         "Accuracy": [accuracy_score(y, y_pred)],
