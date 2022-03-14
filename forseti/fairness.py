@@ -33,7 +33,7 @@ def parity_score(probabilities):
         float: A score between 0 and 1.
     """
     a = np.array(probabilities)
-    return a.prod() ** (1.0 / len(a)) / a.mean()
+    return 1 - (2*a.std())
 
 
 def fairness_report(y, y_pred, sensitives, model_name):
@@ -56,6 +56,7 @@ def fairness_report(y, y_pred, sensitives, model_name):
         "Specificity": tn / (tn + fp),
     }
 
+    # Calculate Independent Group Fairness
     for sens in sensitives.columns:
         likelihoods = []
         for val in sorted(sensitives[sens].unique()):
@@ -67,8 +68,22 @@ def fairness_report(y, y_pred, sensitives, model_name):
                 )
             except KeyError:
                 likelihoods.append(0)
-        name = "Positive Parity Score " + sens
+        name = "Parity Score " + sens
         report[name] = parity_score(likelihoods)
+
+    # Calculate Intersection Group Fairness
+    groupintersect = sensitives.groupby(
+        sensitives.columns.tolist()
+    ).size().reset_index().drop(0, axis=1)
+
+    probs = groupintersect.apply(
+        lambda row: y_pred[
+                (sensitives == row.to_dict()).all(axis=1)
+            ].value_counts(normalize=True),
+        axis=1
+        )[1].values.flatten()
+
+    report['Intersectional Parity Score'] = parity_score(probs)
 
     report["Model"] = model_name
 
