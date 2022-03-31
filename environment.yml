@@ -4,7 +4,7 @@ channels:
   - conda-forge
   - ankurankan
 dependencies:
-  - python
+  - python=3.7
   - pytest
   - flake8
   - black
@@ -12,5 +12,5 @@ dependencies:
   - ipykernel
   - pandas
   - pgmpy
-  - seaborn
+  - seabornco
   - scikit-learn
