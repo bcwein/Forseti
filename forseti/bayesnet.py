@@ -10,13 +10,13 @@ import pickle
 class latentLabelClassifier:
     """Latent Fair Label Bayesian Network Classifier."""
 
-    def __init__(self, df, sensitives, label, atol=0.01, classes=2):
+    def __init__(self, df, sensitives, label, atol=0.01):
         self.df = df
         self.sensitives = sensitives
         self.label = label
         self.atol = atol
-        self.classes = classes
         self.model = BayesianNetwork()
+        self.classes = None
         self.codes = None
 
     def fit(self):
@@ -27,6 +27,7 @@ class latentLabelClassifier:
         Parameter Learning: Expectation Maximation (EM)
         """
         tmp, codes = translate_categorical(self.df.copy(deep=True))
+        self.classes = len(tmp[self.label].value_counts())
         tmp = tmp.drop(self.label, axis=1)
 
         blacklist = []
