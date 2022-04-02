@@ -20,7 +20,7 @@ def translate_categorical(dataframe):
     # Translate numeric to categorical
     numerical = dataframe.select_dtypes('int').columns
     for num in numerical:
-        dataframe[num] = pd.qcut(dataframe[num], 5, duplicates='drop')
+        dataframe[num] = pd.cut(dataframe[num], 5, duplicates='drop')
 
     # Enumerate categorical
     categorical = dataframe.select_dtypes(["category"]).columns
