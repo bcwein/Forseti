@@ -12,5 +12,5 @@ dependencies:
   - ipykernel
   - pandas
   - pgmpy
-  - seabornco
+  - seaborn
   - scikit-learn
