@@ -83,6 +83,8 @@ def fairness_report(y, y_pred, sensitives, model_name):
         axis=1
         )[1].values.flatten()
 
+    # Replace Nan
+    probs = [0 if x != x else x for x in probs]
     report['Intersectional Parity Score'] = parity_score(probs)
 
     report["Model"] = model_name
