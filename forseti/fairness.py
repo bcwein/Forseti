@@ -5,9 +5,16 @@ from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
     f1_score,
+    roc_auc_score
 )
 import pandas as pd
 import numpy as np
+
+
+def sns_auc_score(s_true, y_score):
+    s_auc = roc_auc_score(s_true, y_score)
+    s_auc = max(1 - s_auc, s_auc)
+    return s_auc
 
 
 def parity_score(probabilities):
