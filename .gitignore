@@ -130,3 +130,6 @@ dmypy.json
 
 # Vscode settings
 .vscode/
+
+# Saved Models
+notebooks/trained-models/*
