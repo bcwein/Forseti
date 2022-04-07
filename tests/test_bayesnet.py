@@ -14,8 +14,7 @@ def test_latentLabelClassifier():
         tmp,
         sensitives,
         label,
-        atol=0.01,
-        classes=2
+        atol=0.01
     )
 
     clf.fit()
