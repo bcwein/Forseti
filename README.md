@@ -10,6 +10,7 @@ Module for running bayesian networks
 
 <details>
 <summary>Click here for documentation</summary>
+
 ### class **latentLabelClassifier**
 
 Bayesian network which constructs a bayesian network that models the discrimination process. It assumes that the labels in the training dataset is biased and is genereted from a probability distribution
@@ -180,5 +181,93 @@ Calculates some fairness and performance metrics from test labels and prediction
   - y_pred (array): Model predictions.
   - sensitives (dataframe): Test dataset of sensitive attributes.
   - model_name (string): Name of model.
+
+</details>
+
+## Tree
+Module for tree-based models.
+
+<details>
+<summary>Click here for documentation</summary>
+
+### class **FairDecisionTreeClassifier**
+
+Fair Decision Tree Classifier. The code for this class is borrowed from this [GitHub repository](https://github.com/pereirabarataap/fair_tree_classifier). This decision tree evaluates candidate splits using Splitting
+Criterion AUC for Fairness (SCAFF). See their [paper](https://scholar.google.com/scholar_url?url=https://www.researchgate.net/profile/Antonio-Pereira-Barata-2/publication/355391905_Fair_Tree_Classifier_using_Strong_Demographic_Parity/links/61f14fab5779d35951d60684/Fair-Tree-Classifier-using-Strong-Demographic-Parity.pdf&hl=no&sa=T&oi=gsb-ggp&ct=res&cd=0&d=11839880095099199982&ei=Iw9QYomJIszBsQKLmZzIDQ&scisig=AAGBfm2w5jFZqXIOQ5j2km5xwLFunTPXGg) for more details.
+
+
+>fit()
+
+**Description:** 
+
+Trains the decision tree using the traditional algorithm of generating candidate
+splits, evaluating split in terms of the chosen splitting criterion (SCAFF) and
+selecting the best split.
+
+**Parameters:**
+- X -> any_dim pandas.df or np.array: numerical/categorical
+- y -> one_dim pandas.df or np.array: only binary
+- b (bias) -> any_dim pandas.df or np.array: treated as str
+
+>predict_proba()
+
+**Description:** 
+
+Predict the class of of feature vectors. Predictions are calculated as 
+probabilities of belonging to each class. 
+
+
+**Parameters:**
+
+- X -> any_dim pandas.df or np.array: numerical/categorical
+
+>predict()
+
+Predict the class of of feature vectors. Predictions are outputted as class 
+the feature vector is classified to. 
+
+**Parameters:**
+
+- X -> any_dim pandas.df or np.array: numerical/categorical
+
+### class **FairRandomForestClassifier**
+
+This classifier learns several decision trees using tradition random forest 
+methods. The decision trees are trained on bootstrapped dataset with removed 
+columns etc.
+
+
+>fit()
+
+**Description:** 
+
+Trains the random forestusing the traditional algorithm of bootstrapping
+datasets and removing features from teh dataset.
+
+**Parameters:**
+- X -> any_dim pandas.df or np.array: numerical/categorical
+- y -> one_dim pandas.df or np.array: only binary
+- b (bias) -> any_dim pandas.df or np.array: treated as str
+
+>predict_proba()
+
+**Description:** 
+
+Predict the class of of feature vectors. Predictions are calculated as 
+probabilities of belonging to each class. 
+
+
+**Parameters:**
+
+- X -> any_dim pandas.df or np.array: numerical/categorical
+
+>predict()
+
+Predict the class of of feature vectors. Predictions are outputted as class 
+the feature vector is classified to. 
+
+**Parameters:**
+
+- X -> any_dim pandas.df or np.array: numerical/categorical
 
 </details>
