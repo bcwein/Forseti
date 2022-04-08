@@ -1,16 +1,16 @@
-name: forseti
+name: forseti-test
 channels:
   - defaults
   - conda-forge
-  - ankurankan
 dependencies:
-  - python=3.7
+  - python
   - pytest
   - flake8
   - black
   - jupyter
   - ipykernel
   - pandas
-  - pgmpy
   - seaborn
-  - scikit-learn
+  - pip
+  - pip:
+    - pgmpy
