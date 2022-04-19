@@ -18,7 +18,8 @@ def translate_categorical(dataframe):
         dataframe[obj] = dataframe[obj].astype('category')
 
     # Translate numeric to categorical
-    numerical = dataframe.select_dtypes('int').columns
+    numerics = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']
+    numerical = dataframe.select_dtypes(numerics).columns
     for num in numerical:
         dataframe[num] = pd.cut(dataframe[num], 5, duplicates='drop')
 
