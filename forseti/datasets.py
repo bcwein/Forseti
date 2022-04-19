@@ -6,7 +6,7 @@ import numpy as np
 from scipy.stats import norm
 
 
-def datasetgen(
+def datasetgen_numerical(
     n_samples=1000,
     informative=True,
     seperability=0.5
@@ -112,6 +112,12 @@ def datasetgen(
 
     scores = df.drop(['Gender', 'Race'], axis=1).sum(axis=1)
     thr = scores.median()
-    df['Success'] = (scores >= thr).astype('int')
+
+    mapping_success = {
+        0: 'No',
+        1: 'Yes'
+    }
+    
+    df['Success'] = [mapping_success[x] for x in (scores >= thr).astype('int')]
 
     return df
