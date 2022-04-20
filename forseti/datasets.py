@@ -117,7 +117,7 @@ def datasetgen_numerical(
         0: 'No',
         1: 'Yes'
     }
-    
+
     df['Success'] = [mapping_success[x] for x in (scores >= thr).astype('int')]
 
     return df
