@@ -9,6 +9,7 @@ from sklearn.metrics import (
 )
 import pandas as pd
 import numpy as np
+from scipy.special import rel_entr
 
 
 def sns_auc_score(s_true, y_score):
@@ -43,7 +44,7 @@ def parity_score(probabilities):
     return 1 - (2*a.std())
 
 
-def fairness_report(y, y_pred, sensitives, model_name):
+def fairness_report(y, y_pred_prob, sensitives, model_name):
     """Fairness report
 
     Args:
@@ -55,6 +56,7 @@ def fairness_report(y, y_pred, sensitives, model_name):
     Returns:
         Pandas dataframe: A row with all metrics and their values.
     """
+    y_pred = (y_pred_prob >= 0.5).astype('int')
     tn, fp, _, _ = confusion_matrix(y, y_pred).ravel()
     report = {
         "Accuracy": [accuracy_score(y, y_pred)],
@@ -93,6 +95,27 @@ def fairness_report(y, y_pred, sensitives, model_name):
     # Replace Nan
     probs = [0 if x != x else x for x in probs]
     report['Intersectional Parity Score'] = parity_score(probs)
+
+    for sens in sensitives.columns:
+        if len(sensitives[sens].value_counts()) == 2:
+            report['AUC_' + sens] = sns_auc_score(
+                sensitives[sens],
+                y_pred_prob
+            )
+
+            P = y_pred[
+                sensitives[sens] == 0
+            ].value_counts() / len(y_pred[
+                sensitives[sens] == 0
+            ])
+
+            Q = y_pred[
+                sensitives[sens] == 1
+            ].value_counts() / len(y_pred[
+                sensitives[sens] == 1
+            ])
+
+            report['KL Divergence_' + sens] = sum(rel_entr(P, Q))
 
     report["Model"] = model_name
 
