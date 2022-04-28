@@ -13,6 +13,10 @@ def datasetgen_numerical(
 ):
     """Create Synthetic Datasets
 
+    Input:
+        n_samples (integer): Number of datapoints in dataset.
+        informative (bool): Is dataset informative? True or False.
+        seperability (float): Parameter for seperating sensitive classes.
     Returns:
         df: Pandas DataFrame.
     """
@@ -94,7 +98,7 @@ def datasetgen_numerical(
             mapping_gender[x] for x in bernoulli.rvs(0.5, size=n_samples)
         ]
         df['Gender'] = df['Gender'].astype('category')
-        
+
         a = abs(np.random.randn(len(df['Race'].unique())))
         a = a / a.sum()
         rv = rv_discrete(values=(range(len(a)), a))
