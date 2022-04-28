@@ -70,16 +70,15 @@ def datasetgen_numerical(
     # Race
     lengths = df['Race'].value_counts()
 
-    # Feature 3
-    for count, vals in enumerate(mapping_race.values()):
+    # Feature 3 and 4
+    for count, vals in enumerate(df['Race'].unique()):
         df.loc[df['Race'] == vals, 'Feature 3'] = norm(
             loc=1 + count*seperability*np.random.choice((-1, 1)),
             scale=1
         ).rvs(lengths[vals])
 
-    for count, vals in enumerate(mapping_race.values()):
         df.loc[df['Race'] == vals, 'Feature 4'] = norm(
-            loc=2 + count*seperability*np.random.choice((-1, 1)),
+            loc=1 + count*seperability*np.random.choice((-1, 1)),
             scale=1
         ).rvs(lengths[vals])
 
@@ -95,16 +94,8 @@ def datasetgen_numerical(
             mapping_gender[x] for x in bernoulli.rvs(0.5, size=n_samples)
         ]
         df['Gender'] = df['Gender'].astype('category')
-
-        # Race Attribute
-        mapping_race = {
-            0: 'Black',
-            1: 'White',
-            2: 'Hispanic',
-            3: 'Asian',
-            4: 'Other'
-        }
-        a = abs(np.random.randn(len(mapping_race)))
+        
+        a = abs(np.random.randn(len(df['Race'].unique())))
         a = a / a.sum()
         rv = rv_discrete(values=(range(len(a)), a))
         df['Race'] = [mapping_race[x] for x in rv.rvs(size=n_samples)]

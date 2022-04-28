@@ -85,12 +85,15 @@ def fairness_report(y, y_pred_prob, sensitives, model_name):
         sensitives.columns.tolist()
     ).size().reset_index().drop(0, axis=1)
 
-    probs = groupintersect.apply(
-        lambda row: y_pred[
-                (sensitives == row.to_dict()).all(axis=1)
-            ].value_counts(normalize=True),
-        axis=1
-        )[1].values.flatten()
+    try:
+        probs = groupintersect.apply(
+            lambda row: y_pred[
+                    (sensitives == row.to_dict()).all(axis=1)
+                ].value_counts(normalize=True),
+            axis=1
+            )[1].values.flatten()
+    except KeyError:
+        probs = [1, 0]
 
     # Replace Nan
     probs = [0 if x != x else x for x in probs]
