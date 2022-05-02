@@ -1,9 +1,9 @@
-from forseti.datasets import datasetgen
+from forseti.datasets import datasetgen_numerical
 import pandas as pd
 
 
 def test_datasetgen():
-    df = datasetgen(
+    df = datasetgen_numerical(
         n_samples=10
     )
     assert isinstance(df, pd.DataFrame)
