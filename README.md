@@ -271,3 +271,27 @@ the feature vector is classified to.
 - X -> any_dim pandas.df or np.array: numerical/categorical
 
 </details>
+
+## Datasets
+<details>
+<summary>Click here for documentation</summary>
+
+### Generating synthetic datasets
+
+>datasetgen_numerical()
+
+**Description**:
+
+Creates a dataset with two sensitive columns (Race and Gender) as well as
+4 gaussian features.
+
+**Parameters**:
+
+- n_samples (integer): Number of datapoints in dataset.
+- informative (bool): Is dataset informative? True or False.
+- seperability (float): Parameter for seperating sensitive classes.
+
+
+**Returns**:
+- df: Pandas DataFrame.
+</details>
