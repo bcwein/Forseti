@@ -1,10 +1,15 @@
 """Bayesian Network Module."""
 
-from pgmpy.models import BayesianNetwork
+from pgmpy.models import BayesianNetwork, NaiveBayes
 from pgmpy.estimators import HillClimbSearch
 from pgmpy.estimators import ExpectationMaximization as EM
 from forseti.datproc import translate_categorical
 import pickle
+import numpy as np
+from scipy.special import rel_entr
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import balanced_accuracy_score
 
 
 class latentLabelClassifier:
@@ -111,3 +116,74 @@ class latentLabelClassifier:
             _type_: boolean
         """
         return self.model.check_model()
+
+
+class interpretableNaiveBayes(NaiveBayes):
+
+    def train(self, label, df, name):
+        X = df
+        y = df[label]
+        self.name = name
+
+        (
+            X_train,
+            X_test,
+            y_train,
+            y_test
+        ) = train_test_split(X, y, test_size=0.33)
+
+        # Stored as class attributes since it is used in Permutation Importance
+        self.X_test = X_test.drop(label, axis=1)
+        self.y_test = y_test
+
+        tmp_train, self.codes_train = translate_categorical(
+            X_train.copy(deep=True)
+        )
+
+        self.fit(tmp_train, label)
+
+    def KLDWeights(self):
+        cpds = self.get_cpds()
+        tmp = []
+
+        for key, cpd in enumerate(cpds):
+            if cpd.values.ndim == 2:
+                cpd.values[cpd.values == 0] = 10e-3
+                KLD = np.sum(rel_entr(cpd.values[:, 0], cpd.values[:, 1]))
+                tmp.append(
+                    [list(self.codes_train.keys())[key], KLD, self.name]
+                )
+            else:
+                cpd.values[cpd.values == 0] = 10e-3
+                KLD = np.sum(rel_entr(cpd.values[0], cpd.values[1]))
+                tmp.append(
+                    [list(self.codes_train.keys())[key], KLD, self.name]
+                )
+
+        df = pd.DataFrame(
+            tmp,
+            columns=['Attribute', 'KLD', 'Model']
+        )
+
+        return df
+
+    def PermutationImportance(self, K):
+        df = self.X_test
+        y_pred = self.predict(df)
+        s = balanced_accuracy_score(self.y_test, y_pred)
+        Imp = []
+
+        for col in self.X_test.columns:
+            It = []
+            for i in range(K):
+                # Permute Column
+                df[col] = np.random.permutation(df)
+                yp = self.predict(df)
+                sk = s - balanced_accuracy_score(self.y_test, yp)
+                Imp.append(sk)
+            Imp.append(It)
+
+        return pd.DataFrame(
+            Imp,
+            columns=self.X_test.columns
+        )
