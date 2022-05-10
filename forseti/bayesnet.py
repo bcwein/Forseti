@@ -137,16 +137,16 @@ class interpretableNaiveBayes(NaiveBayes):
 
         for key, cpd in enumerate(cpds):
             if cpd.values.ndim == 2:
-                tmparr = cpd.values
-                tmparr[tmparr == 0] = 10e-3
-                KLD = np.sum(rel_entr(tmparr[:, 0], tmparr[:, 1]))
+                cpd.values[cpd.values == 0] = 10e-3
+                cpd.normalize()
+                KLD = np.sum(rel_entr(cpd.values[:, 0], cpd.values[:, 1]))
                 tmp.append(
                     [list(self.codes_train.keys())[key], KLD, self.name]
                 )
             else:
-                tmparr = cpd.values
-                tmparr[tmparr == 0] = 10e-3
-                KLD = np.sum(rel_entr(tmparr[0], tmparr[1]))
+                cpd.values[cpd.values == 0] = 10e-3
+                cpd.normalize()
+                KLD = np.sum(rel_entr(cpd.values[0], cpd.values[1]))
                 tmp.append(
                     [list(self.codes_train.keys())[key], KLD, self.name]
                 )
@@ -167,12 +167,13 @@ class interpretableNaiveBayes(NaiveBayes):
         Imp = []
 
         for col in self.X_test.columns:
+            It = []
             for i in range(K):
                 # Permute Column
                 df[col] = np.random.permutation(df[col])
                 yp = self.predict(df)
-                sk = s - balanced_accuracy_score(self.y_test, yp)
-                Imp.append([col, sk, name])
+                It.append(balanced_accuracy_score(self.y_test, yp))
+            Imp.append([col, s - np.mean(It), name])
 
         Imp = np.array(Imp)
         df = pd.DataFrame(
