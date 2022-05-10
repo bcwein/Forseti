@@ -7,7 +7,10 @@ from tqdm.auto import tqdm
 from copy import deepcopy as copy
 from joblib import delayed, Parallel
 from scipy.stats import mode, entropy
-from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score, balanced_accuracy_score
+from forseti.datproc import translate_categorical, extract_sensitive
 
 
 class FairDecisionTreeClassifier:
@@ -1039,3 +1042,84 @@ class FairRandomForestClassifier:
                 )
             )[0][0]
             return predictions
+
+
+class interpretableTree(FairRandomForestClassifier):
+    def train(self, df, sensitives, label, max_depth=5, orth=0.5):
+        tmp = df
+        data, codes = translate_categorical(tmp.copy(deep=True))
+        sensitive_attributes = sensitives
+        sensitive, features = extract_sensitive(data, sensitive_attributes)
+        label = label
+        self.max_depth = max_depth
+        self.orthogonality = orth
+
+        y = features[label]
+        s = sensitive
+        X = tmp[features.columns].drop(label, axis=1)
+
+        # One-Hot encode the sensitive attributes
+        encoder = OneHotEncoder(handle_unknown='ignore')
+        encode_df = pd.DataFrame(
+            encoder.fit_transform(s[['race']]).toarray()
+        ).astype('int')
+
+        names = {}
+        for col in encode_df.columns:
+            names[col] = 'Race_' + codes['race'][col]
+
+        encode_df = encode_df.rename(names, axis=1)
+
+        # Merge the sensitive dataframe
+        s = s.join(encode_df).drop('race', axis=1)
+
+        (
+            self.X_train,
+            self.X_test,
+            self.y_train,
+            self.y_test,
+            self.s_train,
+            self.s_test
+        ) = train_test_split(X, y, s, test_size=0.33)
+
+        self.fit(self.X_train, self.y_train, self.s_train)
+
+    def test(self):
+        return self.predict(self.X_test)
+
+    def PermutationImportance(self, K, name):
+        """Permutation Feature Importance.
+
+        Estimate feature importance by permutating column of interest and
+        calculate loss of score.
+
+        Args:
+            K: No of permutation iterations.
+            name: Name of model used.
+
+        Returns:
+            df: Pandas dataframe of feature importance.
+        """
+        df = self.X_test
+        y_pred = self.predict(df)
+        s = balanced_accuracy_score(self.y_test, y_pred)
+        Imp = []
+
+        for col in self.X_test.columns:
+            It = []
+            for i in range(K):
+                # Permute Column
+                df[col] = np.random.permutation(df[col])
+                yp = self.predict(df)
+                It.append(balanced_accuracy_score(self.y_test, yp))
+            Imp.append([col, s - np.mean(It), name])
+
+        Imp = np.array(Imp)
+        df = pd.DataFrame(
+            Imp,
+            columns=['Attribute', 'Weight', 'Model']
+        )
+
+        df['Weight'] = df['Weight'].astype('float')
+
+        return df
