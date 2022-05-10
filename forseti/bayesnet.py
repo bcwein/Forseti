@@ -121,25 +121,14 @@ class latentLabelClassifier:
 class interpretableNaiveBayes(NaiveBayes):
 
     def train(self, label, df, name):
-        X = df
-        y = df[label]
         self.name = name
-
-        (
-            X_train,
-            X_test,
-            y_train,
-            y_test
-        ) = train_test_split(X, y, test_size=0.33)
-
-        # Stored as class attributes since it is used in Permutation Importance
-        self.X_test = X_test.drop(label, axis=1)
-        self.y_test = y_test
-
+        train, test = train_test_split(df, test_size=0.05)
         tmp_train, self.codes_train = translate_categorical(
-            X_train.copy(deep=True)
+            train.copy(deep=True)
         )
-
+        self.X_test, _ = translate_categorical(test.copy(deep=True))
+        self.y_test = self.X_test[label]
+        self.X_test = self.X_test.drop(label, axis=1)
         self.fit(tmp_train, label)
 
     def KLDWeights(self):
@@ -148,14 +137,16 @@ class interpretableNaiveBayes(NaiveBayes):
 
         for key, cpd in enumerate(cpds):
             if cpd.values.ndim == 2:
-                cpd.values[cpd.values == 0] = 10e-3
-                KLD = np.sum(rel_entr(cpd.values[:, 0], cpd.values[:, 1]))
+                tmparr = cpd.values
+                tmparr[tmparr == 0] = 10e-3
+                KLD = np.sum(rel_entr(tmparr[:, 0], tmparr[:, 1]))
                 tmp.append(
                     [list(self.codes_train.keys())[key], KLD, self.name]
                 )
             else:
-                cpd.values[cpd.values == 0] = 10e-3
-                KLD = np.sum(rel_entr(cpd.values[0], cpd.values[1]))
+                tmparr = cpd.values
+                tmparr[tmparr == 0] = 10e-3
+                KLD = np.sum(rel_entr(tmparr[0], tmparr[1]))
                 tmp.append(
                     [list(self.codes_train.keys())[key], KLD, self.name]
                 )
@@ -165,25 +156,30 @@ class interpretableNaiveBayes(NaiveBayes):
             columns=['Attribute', 'KLD', 'Model']
         )
 
+        df['KLD'] = df['KLD'].astype('float')
+
         return df
 
-    def PermutationImportance(self, K):
+    def PermutationImportance(self, K, name):
         df = self.X_test
         y_pred = self.predict(df)
         s = balanced_accuracy_score(self.y_test, y_pred)
         Imp = []
 
         for col in self.X_test.columns:
-            It = []
             for i in range(K):
                 # Permute Column
-                df[col] = np.random.permutation(df)
+                df[col] = np.random.permutation(df[col])
                 yp = self.predict(df)
                 sk = s - balanced_accuracy_score(self.y_test, yp)
-                Imp.append(sk)
-            Imp.append(It)
+                Imp.append([col, sk, name])
 
-        return pd.DataFrame(
+        Imp = np.array(Imp)
+        df = pd.DataFrame(
             Imp,
-            columns=self.X_test.columns
+            columns=['Attribute', 'Weight', 'Model']
         )
+
+        df['Weight'] = df['Weight'].astype('float')
+
+        return df
