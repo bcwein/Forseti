@@ -119,8 +119,15 @@ class latentLabelClassifier:
 
 
 class interpretableNaiveBayes(NaiveBayes):
-
+    """Extension of Naive Bayes in pgmpy."""
     def train(self, label, df, name):
+        """Fit Naive Bayes model on data.
+
+        Args:
+            label: Target variable.
+            df: Pandas dataframe of data.
+            name: Name given to the NB model.
+        """
         self.name = name
         train, test = train_test_split(df, test_size=0.05)
         tmp_train, self.codes_train = translate_categorical(
@@ -132,6 +139,13 @@ class interpretableNaiveBayes(NaiveBayes):
         self.fit(tmp_train, label)
 
     def KLDWeights(self):
+        """KLD Weights.
+
+        Calculate attribute weights using KLD on conditional probabilities.
+
+        Returns:
+            df: Pandas dataframe of weights.
+        """
         cpds = self.get_cpds()
         tmp = []
 
@@ -161,6 +175,18 @@ class interpretableNaiveBayes(NaiveBayes):
         return df
 
     def PermutationImportance(self, K, name):
+        """Permutation Feature Importance.
+
+        Estimate feature importance by permutating column of interest and
+        calculate loss of score.
+
+        Args:
+            K: No of permutation iterations.
+            name: Name of model used.
+
+        Returns:
+            df: Pandas dataframe of feature importance.
+        """
         df = self.X_test
         y_pred = self.predict(df)
         s = balanced_accuracy_score(self.y_test, y_pred)
