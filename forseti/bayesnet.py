@@ -16,13 +16,16 @@ class latentLabelClassifier:
     """Latent Fair Label Bayesian Network Classifier."""
 
     def __init__(self, df, sensitives, label, atol=0.01):
-        self.df = df
+        train, test = train_test_split(df, test_size=0.33)
+        self.train, self.codes = translate_categorical(train)
+        self.test, _ = translate_categorical(test)
+        self.y = self.test[label]
+        self.test = self.test.drop(label, axis=1)
         self.sensitives = sensitives
         self.label = label
         self.atol = atol
         self.model = BayesianNetwork()
         self.classes = None
-        self.codes = None
 
     def fit(self):
         """
@@ -31,25 +34,21 @@ class latentLabelClassifier:
         Structure Learning: Hill Climb Search
         Parameter Learning: Expectation Maximation (EM)
         """
-        tmp, codes = translate_categorical(self.df.copy(deep=True))
-        self.classes = len(tmp[self.label].value_counts())
-        tmp = tmp.drop(self.label, axis=1)
+        self.classes = len(self.train[self.label].value_counts())
 
         blacklist = []
-        for col in tmp.columns:
+        for col in self.train.drop(self.label, axis=1):
             blacklist.append((col, self.sensitives[0]))
             blacklist.append((col, self.sensitives[1]))
 
-        c = HillClimbSearch(tmp)
+        c = HillClimbSearch(self.train.drop(self.label, axis=1))
         model = c.estimate(black_list=blacklist)
 
         for sens in self.sensitives:
             model.add_edge(sens, self.label)
 
-        tmp, codes = translate_categorical(self.df.copy(deep=True))
-
         # Connect latent to features
-        for col in tmp.columns:
+        for col in self.train.drop(self.label, axis=1):
             if col in self.sensitives:
                 continue
             else:
@@ -60,7 +59,7 @@ class latentLabelClassifier:
 
         fair_model = BayesianNetwork(list(model.edges()), latents={"fair"})
 
-        estimator = EM(fair_model, tmp)
+        estimator = EM(fair_model, self.train)
         cpds = estimator.get_parameters(
             latent_card={"fair": self.classes}, atol=self.atol
         )
@@ -69,29 +68,22 @@ class latentLabelClassifier:
             fair_model.add_cpds(cpd)
 
         self.model = fair_model
-        self.codes = codes
 
-    def predict_probability(self, test):
+    def predict_probability(self):
         """Predict and return probabilities.
 
-        Args:
-            test (Dataframe): Test Dataset
-
         Return:
             dataframe: Dataframe with predictions for unobserved variables.
         """
-        return self.model.predict_probability(test)
+        return self.model.predict_probability(self.test)
 
-    def predict(self, test):
+    def predict(self):
         """Predict and return prediction labels.
 
-        Args:
-            test (Dataframe): Test Dataset
-
         Return:
             dataframe: Dataframe with predictions for unobserved variables.
         """
-        return self.model.predict(test)
+        return self.model.predict(self.test)
 
     def load(self, file):
         """Load trained model from file using pickle.
@@ -117,6 +109,43 @@ class latentLabelClassifier:
         """
         return self.model.check_model()
 
+    def PermutationImportance(self, K, name):
+        """Permutation Feature Importance.
+
+        Estimate feature importance by permutating column of interest and
+        calculate loss of score.
+
+        Args:
+            K: No of permutation iterations.
+            name: Name of model used.
+
+        Returns:
+            df: Pandas dataframe of feature importance.
+        """
+        df = self.test.copy(deep=True)
+        y_pred = self.model.predict(df)['fair']
+        s = balanced_accuracy_score(self.y, y_pred)
+        Imp = []
+
+        for col in self.test.columns:
+            It = []
+            for i in range(K):
+                # Permute Column
+                df[col] = np.random.permutation(df[col])
+                yp = self.model.predict(df)['fair']
+                It.append(balanced_accuracy_score(self.y, yp))
+            Imp.append([col, s - np.mean(It), name])
+
+        Imp = np.array(Imp)
+        df = pd.DataFrame(
+            Imp,
+            columns=['Attribute', 'Weight', 'Model']
+        )
+
+        df['Weight'] = df['Weight'].astype('float')
+
+        return df
+
 
 class interpretableNaiveBayes(NaiveBayes):
     """Extension of Naive Bayes in pgmpy."""
@@ -130,13 +159,13 @@ class interpretableNaiveBayes(NaiveBayes):
         """
         self.name = name
         train, test = train_test_split(df, test_size=0.05)
-        tmp_train, self.codes_train = translate_categorical(
+        self.train_train, self.codes_train = translate_categorical(
             train.copy(deep=True)
         )
         self.X_test, _ = translate_categorical(test.copy(deep=True))
         self.y_test = self.X_test[label]
         self.X_test = self.X_test.drop(label, axis=1)
-        self.fit(tmp_train, label)
+        self.fit(self.train_train, label)
 
     def KLDWeights(self):
         """KLD Weights.
@@ -147,26 +176,26 @@ class interpretableNaiveBayes(NaiveBayes):
             df: Pandas dataframe of weights.
         """
         cpds = self.get_cpds()
-        tmp = []
+        self.train = []
 
         for key, cpd in enumerate(cpds):
             if cpd.values.ndim == 2:
                 cpd.values[cpd.values == 0] = 10e-3
                 cpd.normalize()
                 KLD = np.sum(rel_entr(cpd.values[:, 0], cpd.values[:, 1]))
-                tmp.append(
+                self.train.append(
                     [list(self.codes_train.keys())[key], KLD, self.name]
                 )
             else:
                 cpd.values[cpd.values == 0] = 10e-3
                 cpd.normalize()
                 KLD = np.sum(rel_entr(cpd.values[0], cpd.values[1]))
-                tmp.append(
+                self.train.append(
                     [list(self.codes_train.keys())[key], KLD, self.name]
                 )
 
         df = pd.DataFrame(
-            tmp,
+            self.train,
             columns=['Attribute', 'KLD', 'Model']
         )
 

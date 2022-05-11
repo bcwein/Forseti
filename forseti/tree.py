@@ -1050,7 +1050,7 @@ class interpretableTree(FairRandomForestClassifier):
         data, codes = translate_categorical(tmp.copy(deep=True))
         sensitive_attributes = sensitives
         sensitive, features = extract_sensitive(data, sensitive_attributes)
-        label = label
+        self.label = label
         self.max_depth = max_depth
         self.orthogonality = orth
 
@@ -1058,20 +1058,22 @@ class interpretableTree(FairRandomForestClassifier):
         s = sensitive
         X = tmp[features.columns].drop(label, axis=1)
 
-        # One-Hot encode the sensitive attributes
-        encoder = OneHotEncoder(handle_unknown='ignore')
-        encode_df = pd.DataFrame(
-            encoder.fit_transform(s[['race']]).toarray()
-        ).astype('int')
+        for sens in sensitive_attributes:
+            if len(df[sens].value_counts()) > 2:
+                # One-Hot encode the sensitive attributes
+                encoder = OneHotEncoder(handle_unknown='ignore')
+                encode_df = pd.DataFrame(
+                    encoder.fit_transform(s[[sens]]).toarray()
+                ).astype('int')
 
-        names = {}
-        for col in encode_df.columns:
-            names[col] = 'Race_' + codes['race'][col]
+                names = {}
+                for col in encode_df.columns:
+                    names[col] = str(sens) + '_' + codes[sens][col]
 
-        encode_df = encode_df.rename(names, axis=1)
+                encode_df = encode_df.rename(names, axis=1)
 
-        # Merge the sensitive dataframe
-        s = s.join(encode_df).drop('race', axis=1)
+                # Merge the sensitive dataframe
+                s = s.join(encode_df).drop(sens, axis=1)
 
         (
             self.X_train,
