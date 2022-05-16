@@ -10,6 +10,7 @@ from scipy.special import rel_entr
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import balanced_accuracy_score
+import matplotlib.pyplot as plt
 
 
 class latentLabelClassifier:
@@ -146,6 +147,33 @@ class latentLabelClassifier:
 
         return df
 
+    def ICEPlot(self, attr, samples=100):
+        df = pd.DataFrame()
+        a = self.test.sample(samples)
+
+        for val in self.codes[attr]:
+            a[attr] = val
+            tmp = self.model.predict_probability(a)
+            tmp[attr] = val
+            df = df.append(tmp)
+
+        if isinstance(self.codes[attr][0], pd._libs.interval.Interval):
+            pass
+        else:
+            df = df.replace({attr: self.codes[attr]})
+
+        for idx in df.index.unique():
+            plt.plot(
+                df.loc[idx][attr],
+                df.loc[idx].iloc[:, 1],
+                c='#1f77b4',
+                alpha=0.5
+            )
+
+        plt.xlabel(attr)
+        plt.ylabel('Positive Outcome Probability')
+        plt.xticks(rotation=45)
+
 
 class interpretableNaiveBayes(NaiveBayes):
     """Extension of Naive Bayes in pgmpy."""
@@ -178,20 +206,20 @@ class interpretableNaiveBayes(NaiveBayes):
         cpds = self.get_cpds()
         self.train = []
 
-        for key, cpd in enumerate(cpds):
+        for attr, cpd in enumerate(cpds):
             if cpd.values.ndim == 2:
                 cpd.values[cpd.values == 0] = 10e-3
                 cpd.normalize()
                 KLD = np.sum(rel_entr(cpd.values[:, 0], cpd.values[:, 1]))
                 self.train.append(
-                    [list(self.codes_train.keys())[key], KLD, self.name]
+                    [list(self.codes_train.attrs())[attr], KLD, self.name]
                 )
             else:
                 cpd.values[cpd.values == 0] = 10e-3
                 cpd.normalize()
                 KLD = np.sum(rel_entr(cpd.values[0], cpd.values[1]))
                 self.train.append(
-                    [list(self.codes_train.keys())[key], KLD, self.name]
+                    [list(self.codes_train.attrs())[attr], KLD, self.name]
                 )
 
         df = pd.DataFrame(
@@ -239,3 +267,30 @@ class interpretableNaiveBayes(NaiveBayes):
         df['Weight'] = df['Weight'].astype('float')
 
         return df
+
+    def ICEplot(self, attr, samples=100):
+        df = pd.DataFrame()
+        a = self.X_test.sample(samples)
+
+        for val in self.codes_train[attr]:
+            a[attr] = val
+            tmp = self.predict_probability(a)
+            tmp[attr] = val
+            df = df.append(tmp)
+
+        if isinstance(self.codes_train[attr][0], pd._libs.interval.Interval):
+            pass
+        else:
+            df = df.replace({attr: self.codes_train[attr]})
+
+        for idx in df.index.unique():
+            plt.plot(
+                df.loc[idx][attr],
+                df.loc[idx].iloc[:, 1],
+                c='#1f77b4',
+                alpha=0.5
+            )
+
+        plt.xlabel(attr)
+        plt.ylabel('Positive Outcome Probability')
+        plt.xticks(rotation=45)

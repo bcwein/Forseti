@@ -4,6 +4,7 @@ import pandas as pd
 from math import ceil
 import multiprocessing
 from tqdm.auto import tqdm
+import matplotlib.pyplot as plt
 from copy import deepcopy as copy
 from joblib import delayed, Parallel
 from scipy.stats import mode, entropy
@@ -1047,7 +1048,7 @@ class FairRandomForestClassifier:
 class interpretableTree(FairRandomForestClassifier):
     def train(self, df, sensitives, label, max_depth=5, orth=0.5):
         tmp = df
-        data, codes = translate_categorical(tmp.copy(deep=True))
+        data, self.codes = translate_categorical(tmp.copy(deep=True))
         sensitive_attributes = sensitives
         sensitive, features = extract_sensitive(data, sensitive_attributes)
         self.label = label
@@ -1068,7 +1069,7 @@ class interpretableTree(FairRandomForestClassifier):
 
                 names = {}
                 for col in encode_df.columns:
-                    names[col] = str(sens) + '_' + codes[sens][col]
+                    names[col] = str(sens) + '_' + self.codes[sens][col]
 
                 encode_df = encode_df.rename(names, axis=1)
 
@@ -1125,3 +1126,35 @@ class interpretableTree(FairRandomForestClassifier):
         df['Weight'] = df['Weight'].astype('float')
 
         return df
+
+    def ICDPlot(self, attr, samples=100):
+        a = self.X_test.sample(samples)
+
+        df = pd.DataFrame()
+
+        codes = list(sorted(a[attr].unique()))
+
+        for i, val in enumerate(sorted(a[attr].unique())):
+            a[attr] = val
+            arr = self.predict_proba(a)
+            arr[:, 0] = i
+
+            df = df.append(
+                pd.DataFrame(
+                    arr,
+                    columns=['X', 'Positive Predictive Probability']
+                )
+            )
+
+        for idx in df.index.unique():
+            plt.plot(
+                df.loc[idx]['X'],
+                df.loc[idx].iloc[:, 1],
+                c='#1f77b4',
+                alpha=0.5
+            )
+
+            plt.xlabel(attr)
+            plt.ylabel('Positive Outcome Probability')
+            plt.xticks(range(len(codes)), codes, size='small')
+            plt.xticks(rotation=45)
