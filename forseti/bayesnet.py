@@ -186,6 +186,7 @@ class interpretableNaiveBayes(NaiveBayes):
             df: Pandas dataframe of data.
             name: Name given to the NB model.
         """
+        self.label = label
         self.name = name
         train, test = train_test_split(df, test_size=0.05)
         self.train_train, self.codes_train = translate_categorical(
@@ -309,23 +310,42 @@ class interpretableNaiveBayes(NaiveBayes):
 
         def randomChange(row):
             col = random.choice(X.columns)
-            val = random.choice(self.codes_train[col])
+            val = random.choice(list(self.codes_train[col].keys()))
             row[col] = val
+            return row
 
-        X.apply(lambda row: randomChange(row), axis=1)
+        X = X.apply(lambda row: randomChange(row), axis=1)
 
         # Objective 1
         o1 = np.absolute(self.predict_probability(X).iloc[:, 1] - 1)
 
         # Objective 2
-        o2 = (datapoint == X).astype('int').mean(axis=1)
+        o2 = X.apply(
+            lambda row: (row == datapoint).iloc[0], axis=1
+        ).astype('int').mean(axis=1)
 
         # Objective 3
-        equaldf = (datapoint == X).astype('int')
+        equaldf = X.apply(
+            lambda row: (row == datapoint).iloc[0], axis=1
+        ).astype('int')
         o3 = equaldf[equaldf == 0].count(axis=1)
+
+        # Objective 4
+        Xobs = self.train_train.sample(100).drop(self.label, axis=1)
+
+        def getClosest(datapoint):
+            return Xobs.apply(
+                lambda row: (row == datapoint), axis=1
+            ).astype('int').mean(axis=1).sort_values().iloc[0]
+
+        o4 = X.apply(
+            lambda row: getClosest(row),
+            axis=1
+        ).sort_values()
 
         X['O1'] = o1
         X['O2'] = o2
         X['O3'] = o3
+        X['O4'] = o4
 
         return X
