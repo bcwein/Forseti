@@ -7,6 +7,7 @@ from forseti.datproc import translate_categorical
 import pickle
 import numpy as np
 from scipy.special import rel_entr
+import random
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import balanced_accuracy_score
@@ -294,3 +295,37 @@ class interpretableNaiveBayes(NaiveBayes):
         plt.xlabel(attr)
         plt.ylabel('Positive Outcome Probability')
         plt.xticks(rotation=45)
+
+    def generateCounterfactuals(self, candidates=100):
+
+        datapoint = self.X_test.sample(1)
+
+        # Find candidate that has negative prediction
+        while self.predict_probability(datapoint).iloc[0, 1] >= 0.5:
+            datapoint = self.X_test.sample(1)
+
+        # Sample Candidates
+        X = datapoint.sample(candidates, replace=True)
+
+        def randomChange(row):
+            col = random.choice(X.columns)
+            val = random.choice(self.codes_train[col])
+            row[col] = val
+
+        X.apply(lambda row: randomChange(row), axis=1)
+
+        # Objective 1
+        o1 = np.absolute(self.predict_probability(X).iloc[:, 1] - 1)
+
+        # Objective 2
+        o2 = (datapoint == X).astype('int').mean(axis=1)
+
+        # Objective 3
+        equaldf = (datapoint == X).astype('int')
+        o3 = equaldf[equaldf == 0].count(axis=1)
+
+        X['O1'] = o1
+        X['O2'] = o2
+        X['O3'] = o3
+
+        return X

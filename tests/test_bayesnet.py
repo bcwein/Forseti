@@ -34,3 +34,20 @@ def test_interpretableNaiveBayes():
     )
 
     assert clf.check_model()
+
+
+def test_counterfactuals():
+    clf = interpretableNaiveBayes()
+
+    tmp = df
+    label = 'income'
+
+    clf = interpretableNaiveBayes()
+
+    clf.train(
+        label,
+        tmp,
+        'NB'
+    )
+
+    assert isinstance(clf.generateCounterfactuals(), float)
