@@ -299,6 +299,69 @@ class interpretableNaiveBayes(NaiveBayes):
 
     def generateCounterfactuals(self, candidates=100):
 
+        """Helper Functions"""
+        def randomChange(row, mutation):
+            for i in range(mutation):
+                col = random.choice(P.columns)
+                val = random.choice(list(self.codes_train[col].keys()))
+                row[col] = val
+            return row
+
+        def calculateObjective(data):
+            # Objective 1
+            o1 = np.absolute(self.predict_probability(data).iloc[:, 1] - 1)
+
+            # Objective 2
+            o2 = data.apply(
+                lambda row: (row == datapoint).iloc[0], axis=1
+            ).astype('int').mean(axis=1)
+
+            # Objective 3
+            equaldf = data.apply(
+                lambda row: (row == datapoint).iloc[0], axis=1
+            ).astype('int')
+            o3 = equaldf[equaldf == 0].count(axis=1)
+
+            # Objective 4
+            Xobs = self.train_train.sample(100).drop(self.label, axis=1)
+
+            def getClosest(datapoint):
+                return Xobs.apply(
+                    lambda row: (row == datapoint), axis=1
+                ).astype('int').mean(axis=1).sort_values().iloc[0]
+
+            o4 = data.apply(
+                lambda row: getClosest(row),
+                axis=1
+            ).sort_values()
+
+            data['O1'] = o1
+            data['O2'] = o2
+            data['O3'] = o3
+            data['O4'] = o4
+
+            data = data.reset_index(drop=True)
+            data = data.fillna(1.0)
+            return data
+
+        def dominates(row1, row2):
+            opt = ['O1', 'O2', 'O3', 'O4']
+            return (P.iloc[row1][opt] <= P.iloc[row2][opt]).sum() < 4
+
+        def recombination(parents, children=100):
+            Q = pd.DataFrame()
+            df = P.iloc[parents]
+            for i in range(children):
+                child = df.iloc[0].copy()
+                for col in df.columns:
+                    child[col] = df[col].sample(1)
+                # Mutate Child
+                child = randomChange(child, 1)
+                Q = Q.append(child)
+            Q = Q.reset_index(drop=True)
+            return Q
+
+        """START OF COUNTERFACTUAL GENERATION!"""
         datapoint = self.X_test.sample(1)
 
         # Find candidate that has negative prediction
@@ -306,46 +369,36 @@ class interpretableNaiveBayes(NaiveBayes):
             datapoint = self.X_test.sample(1)
 
         # Sample Candidates
-        X = datapoint.sample(candidates, replace=True)
+        P = datapoint.sample(candidates, replace=True)
 
-        def randomChange(row):
-            col = random.choice(X.columns)
-            val = random.choice(list(self.codes_train[col].keys()))
-            row[col] = val
-            return row
+        # Generate random parent population
+        P = P.apply(
+            lambda row: randomChange(
+                    row, random.randint(0, len(row))
+                ), axis=1
+            )
 
-        X = X.apply(lambda row: randomChange(row), axis=1)
+        # Calculate Objectives for Population
+        P = calculateObjective(P)
 
-        # Objective 1
-        o1 = np.absolute(self.predict_probability(X).iloc[:, 1] - 1)
+        # Rank parent population
+        F1 = set()
+        for p in range(len(P)):
+            Sp = set()
+            Np = 0
+            for q in range(len(P)):
+                if dominates(p, q):
+                    Sp.add(q)
+                elif dominates(q, p):
+                    Np = Np + 1
+            if not(Np):
+                F1.add(p)
 
-        # Objective 2
-        o2 = X.apply(
-            lambda row: (row == datapoint).iloc[0], axis=1
-        ).astype('int').mean(axis=1)
-
-        # Objective 3
-        equaldf = X.apply(
-            lambda row: (row == datapoint).iloc[0], axis=1
-        ).astype('int')
-        o3 = equaldf[equaldf == 0].count(axis=1)
-
-        # Objective 4
-        Xobs = self.train_train.sample(100).drop(self.label, axis=1)
-
-        def getClosest(datapoint):
-            return Xobs.apply(
-                lambda row: (row == datapoint), axis=1
-            ).astype('int').mean(axis=1).sort_values().iloc[0]
-
-        o4 = X.apply(
-            lambda row: getClosest(row),
-            axis=1
-        ).sort_values()
-
-        X['O1'] = o1
-        X['O2'] = o2
-        X['O3'] = o3
-        X['O4'] = o4
-
-        return X
+        parents = random.sample(F1, 2)
+        P = P.drop(['O1', 'O2', 'O3', 'O4'], axis=1)
+        Q = recombination(parents)
+        R = P.append(Q, ignore_index=True)
+        R = R.apply(lambda x: x.astype('int'))
+        R = R.apply(lambda x: x.astype('category'))
+        R = calculateObjective(R)
+        return datapoint, R
