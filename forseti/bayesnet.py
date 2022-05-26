@@ -11,7 +11,6 @@ import random
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import balanced_accuracy_score
-import matplotlib.pyplot as plt
 
 
 class latentLabelClassifier:
@@ -148,13 +147,13 @@ class latentLabelClassifier:
 
         return df
 
-    def ICEPlot(self, attr, samples=100):
+    def ICE(self, attr, samples=100):
         df = pd.DataFrame()
         a = self.test.sample(samples)
-
         for val in self.codes[attr]:
             a[attr] = val
-            tmp = self.model.predict_probability(a)
+            tmp = self.model.predict_probability(a).iloc[:, -2:]
+            tmp.columns = ['negative_outcome', 'positive_outcome']
             tmp[attr] = val
             df = df.append(tmp)
 
@@ -163,17 +162,7 @@ class latentLabelClassifier:
         else:
             df = df.replace({attr: self.codes[attr]})
 
-        for idx in df.index.unique():
-            plt.plot(
-                df.loc[idx][attr],
-                df.loc[idx].iloc[:, 1],
-                c='#1f77b4',
-                alpha=0.5
-            )
-
-        plt.xlabel(attr)
-        plt.ylabel('Positive Outcome Probability')
-        plt.xticks(rotation=45)
+        return df
 
 
 class interpretableNaiveBayes(NaiveBayes):
@@ -270,13 +259,13 @@ class interpretableNaiveBayes(NaiveBayes):
 
         return df
 
-    def ICEplot(self, attr, samples=100):
+    def ICE(self, attr, samples=100):
         df = pd.DataFrame()
         a = self.X_test.sample(samples)
-
         for val in self.codes_train[attr]:
             a[attr] = val
             tmp = self.predict_probability(a)
+            tmp.columns = ['negative_outcome', 'positive_outcome']
             tmp[attr] = val
             df = df.append(tmp)
 
@@ -285,17 +274,7 @@ class interpretableNaiveBayes(NaiveBayes):
         else:
             df = df.replace({attr: self.codes_train[attr]})
 
-        for idx in df.index.unique():
-            plt.plot(
-                df.loc[idx][attr],
-                df.loc[idx].iloc[:, 1],
-                c='#1f77b4',
-                alpha=0.5
-            )
-
-        plt.xlabel(attr)
-        plt.ylabel('Positive Outcome Probability')
-        plt.xticks(rotation=45)
+        return df
 
     def generateCounterfactuals(self, candidates=100):
 
@@ -361,6 +340,24 @@ class interpretableNaiveBayes(NaiveBayes):
             Q = Q.reset_index(drop=True)
             return Q
 
+        def crowdDistance(F1, df):
+            I = df.loc[list(F1)]
+
+            I.insert(len(I.columns), 'Distance', 0)
+
+            for obj in ['O1', 'O2', 'O3', 'O4']:
+                I = I.sort_values(obj)
+                I.iloc[0, I.columns.get_loc('Distance')] = np.inf
+                I.iloc[-1, I.columns.get_loc('Distance')] = np.inf
+                for i in range(len(I) - 1):
+                    I.iloc[i, I.columns.get_loc('Distance')] = \
+                        I.iloc[i, I.columns.get_loc('Distance')] + \
+                        I.iloc[i+1][obj] - I.iloc[i-1][obj] / \
+                        abs(I[obj].max() - I[obj].min())
+
+            I = I.sort_values('Distance', ascending=False)
+            return I
+
         """START OF COUNTERFACTUAL GENERATION!"""
         datapoint = self.X_test.sample(1)
 
@@ -374,7 +371,7 @@ class interpretableNaiveBayes(NaiveBayes):
         # Generate random parent population
         P = P.apply(
             lambda row: randomChange(
-                    row, random.randint(0, len(row))
+                    row, random.randint(0, 4)
                 ), axis=1
             )
 
@@ -391,14 +388,17 @@ class interpretableNaiveBayes(NaiveBayes):
                     Sp.add(q)
                 elif dominates(q, p):
                     Np = Np + 1
-            if not(Np):
+            if Np == 0:
+                prank = 1
                 F1.add(p)
 
-        parents = random.sample(F1, 2)
+        Pcrowd = crowdDistance(F1, P)
+        parents = [Pcrowd.index[0], Pcrowd.index[1]]
         P = P.drop(['O1', 'O2', 'O3', 'O4'], axis=1)
         Q = recombination(parents)
         R = P.append(Q, ignore_index=True)
         R = R.apply(lambda x: x.astype('int'))
         R = R.apply(lambda x: x.astype('category'))
         R = calculateObjective(R)
+
         return datapoint, R
