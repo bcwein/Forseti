@@ -276,7 +276,7 @@ class interpretableNaiveBayes(NaiveBayes):
 
         return df
 
-    def generateCounterfactuals(self, candidates=100):
+    def generateCounterfactuals(self, datapoint, candidates=100, gen=1):
 
         """Helper Functions"""
         def randomChange(row, mutation):
@@ -323,7 +323,7 @@ class interpretableNaiveBayes(NaiveBayes):
             data = data.fillna(1.0)
             return data
 
-        def dominates(row1, row2):
+        def dominates(row1, row2, P):
             opt = ['O1', 'O2', 'O3', 'O4']
             return (P.iloc[row1][opt] <= P.iloc[row2][opt]).sum() < 4
 
@@ -359,8 +359,6 @@ class interpretableNaiveBayes(NaiveBayes):
             return I
 
         """START OF COUNTERFACTUAL GENERATION!"""
-        datapoint = self.X_test.sample(1)
-
         # Find candidate that has negative prediction
         while self.predict_probability(datapoint).iloc[0, 1] >= 0.5:
             datapoint = self.X_test.sample(1)
@@ -371,7 +369,7 @@ class interpretableNaiveBayes(NaiveBayes):
         # Generate random parent population
         P = P.apply(
             lambda row: randomChange(
-                    row, random.randint(0, 4)
+                    row, random.randint(0, len(row)/2)
                 ), axis=1
             )
 
@@ -384,12 +382,11 @@ class interpretableNaiveBayes(NaiveBayes):
             Sp = set()
             Np = 0
             for q in range(len(P)):
-                if dominates(p, q):
+                if dominates(p, q, P):
                     Sp.add(q)
-                elif dominates(q, p):
+                elif dominates(q, p, P):
                     Np = Np + 1
             if Np == 0:
-                prank = 1
                 F1.add(p)
 
         Pcrowd = crowdDistance(F1, P)
@@ -398,7 +395,50 @@ class interpretableNaiveBayes(NaiveBayes):
         Q = recombination(parents)
         R = P.append(Q, ignore_index=True)
         R = R.apply(lambda x: x.astype('int'))
-        R = R.apply(lambda x: x.astype('category'))
         R = calculateObjective(R)
+
+        # Repeat N number of generations
+        for i in range(gen):
+            # Rank population
+            F1 = set()
+            F = {}
+            N = np.zeros(len(R))
+            S = {}
+            for p in range(len(R)):
+                S[p] = set()
+                for q in range(len(R)):
+                    if dominates(p, q, R):
+                        S[p].add(q)
+                    elif dominates(q, p, R):
+                        N[p] = N[p] + 1
+                if N[p] == 0:
+                    F1.add(p)
+            i = 0
+            F[i] = F1
+            while F[i]:
+                Q = set()
+                for p in F[i]:
+                    for q in S[p]:
+                        N[q] = N[q] - 1
+                        if N[q] == 0:
+                            Q.add(q)
+                i = i + 1
+                F[i] = Q
+
+            Rnew = set()
+            i = 0
+            while len(Rnew) + len(F[i]) < 100:
+                Rnew = Rnew.union(F[i])
+                i = i + 1
+
+            Franked = crowdDistance(F[i], R)
+            num = (100 - len(Rnew))
+            Rnew = Rnew.union(list(Franked.iloc[:num].index))
+            P = R.loc[Rnew]
+            P = P.drop(['O1', 'O2', 'O3', 'O4'], axis=1)
+            Q = recombination(parents)
+            R = P.append(Q, ignore_index=True)
+            R = R.apply(lambda x: x.astype('int'))
+            R = calculateObjective(R)
 
         return datapoint, R
