@@ -231,22 +231,22 @@ class latentLabelClassifier:
             return Q
 
         def crowdDistance(F1, df):
-            I = df.loc[list(F1)]
+            In = df.loc[list(F1)]
 
-            I.insert(len(I.columns), 'Distance', 0)
+            In.insert(len(In.columns), 'Distance', 0)
 
             for obj in ['O1', 'O2', 'O3', 'O4']:
-                I = I.sort_values(obj)
-                I.iloc[0, I.columns.get_loc('Distance')] = np.inf
-                I.iloc[-1, I.columns.get_loc('Distance')] = np.inf
-                for i in range(len(I) - 1):
-                    I.iloc[i, I.columns.get_loc('Distance')] = \
-                        I.iloc[i, I.columns.get_loc('Distance')] + \
-                        I.iloc[i+1][obj] - I.iloc[i-1][obj] / \
-                        abs(I[obj].max() - I[obj].min())
+                In = In.sort_values(obj)
+                In.iloc[0, In.columns.get_loc('Distance')] = np.inf
+                In.iloc[-1, In.columns.get_loc('Distance')] = np.inf
+                for i in range(len(In) - 1):
+                    In.iloc[i, In.columns.get_loc('Distance')] = \
+                        In.iloc[i, In.columns.get_loc('Distance')] + \
+                        In.iloc[i+1][obj] - In.iloc[i-1][obj] / \
+                        abs(In[obj].max() - In[obj].min())
 
-            I = I.sort_values('Distance', ascending=False)
-            return I
+            In = In.sort_values('Distance', ascending=False)
+            return In
 
         """START OF COUNTERFACTUAL GENERATION!"""
         # Sample Candidates
@@ -508,22 +508,22 @@ class interpretableNaiveBayes(NaiveBayes):
             return Q
 
         def crowdDistance(F1, df):
-            I = df.loc[list(F1)]
+            In = df.loc[list(F1)]
 
-            I.insert(len(I.columns), 'Distance', 0)
+            In.insert(len(In.columns), 'Distance', 0)
 
             for obj in ['O1', 'O2', 'O3', 'O4']:
-                I = I.sort_values(obj)
-                I.iloc[0, I.columns.get_loc('Distance')] = np.inf
-                I.iloc[-1, I.columns.get_loc('Distance')] = np.inf
-                for i in range(len(I) - 1):
-                    I.iloc[i, I.columns.get_loc('Distance')] = \
-                        I.iloc[i, I.columns.get_loc('Distance')] + \
-                        I.iloc[i+1][obj] - I.iloc[i-1][obj] / \
-                        abs(I[obj].max() - I[obj].min())
+                In = In.sort_values(obj)
+                In.iloc[0, In.columns.get_loc('Distance')] = np.inf
+                In.iloc[-1, In.columns.get_loc('Distance')] = np.inf
+                for i in range(len(In) - 1):
+                    In.iloc[i, In.columns.get_loc('Distance')] = \
+                        In.iloc[i, In.columns.get_loc('Distance')] + \
+                        In.iloc[i+1][obj] - In.iloc[i-1][obj] / \
+                        abs(In[obj].max() - In[obj].min())
 
-            I = I.sort_values('Distance', ascending=False)
-            return I
+            In = In.sort_values('Distance', ascending=False)
+            return In
 
         """START OF COUNTERFACTUAL GENERATION!"""
         # Sample Candidates
