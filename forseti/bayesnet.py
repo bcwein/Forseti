@@ -153,7 +153,7 @@ class latentLabelClassifier:
         for val in self.codes[attr]:
             a[attr] = val
             tmp = self.model.predict_probability(a).iloc[:, -2:]
-            tmp.columns = ['negative_outcome', 'positive_outcome']
+            tmp.columns = ['positive_outcome', 'negative_outcome']
             tmp[attr] = val
             df = df.append(tmp)
 
@@ -370,14 +370,14 @@ class interpretableNaiveBayes(NaiveBayes):
                 cpd.normalize()
                 KLD = np.sum(rel_entr(cpd.values[:, 0], cpd.values[:, 1]))
                 self.train.append(
-                    [list(self.codes_train.attrs())[attr], KLD, self.name]
+                    [list(self.codes_train.keys())[attr], KLD, self.name]
                 )
             else:
                 cpd.values[cpd.values == 0] = 10e-3
                 cpd.normalize()
                 KLD = np.sum(rel_entr(cpd.values[0], cpd.values[1]))
                 self.train.append(
-                    [list(self.codes_train.attrs())[attr], KLD, self.name]
+                    [list(self.codes_train.keys())[attr], KLD, self.name]
                 )
 
         df = pd.DataFrame(
