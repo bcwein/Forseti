@@ -22,6 +22,7 @@ def translate_categorical(dataframe):
     numerical = dataframe.select_dtypes(numerics).columns
     for num in numerical:
         dataframe[num] = pd.cut(dataframe[num], 5, duplicates='drop')
+        dataframe[num] = dataframe[num].astype('category')
 
     # Enumerate categorical
     categorical = dataframe.select_dtypes(["category"]).columns
@@ -30,6 +31,7 @@ def translate_categorical(dataframe):
         dataframe[cat] = dataframe[cat].astype("category")
         codes[cat] = dict(enumerate(dataframe[cat].cat.categories))
         dataframe[cat] = dataframe[cat].cat.codes
+        dataframe[cat] = dataframe[cat].astype('category')
 
     return dataframe, codes
 

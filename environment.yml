@@ -1,4 +1,4 @@
-name: forseti-test
+name: forseti
 channels:
   - defaults
   - conda-forge

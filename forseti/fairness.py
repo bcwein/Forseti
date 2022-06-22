@@ -56,7 +56,7 @@ def fairness_report(y, y_pred_prob, sensitives, model_name):
     Returns:
         Pandas dataframe: A row with all metrics and their values.
     """
-    y_pred = (y_pred_prob >= 0.5).astype('int')
+    y_pred = (y_pred_prob.astype('float') >= 0.5).astype('int')
     tn, fp, _, _ = confusion_matrix(y, y_pred).ravel()
     report = {
         "Accuracy": [accuracy_score(y, y_pred)],
